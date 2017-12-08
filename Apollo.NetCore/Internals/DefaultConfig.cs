@@ -7,6 +7,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 
 namespace Apollo.NetCore.Internals
 {
@@ -35,7 +36,7 @@ namespace Apollo.NetCore.Internals
             }
             catch (Exception ex)
             {
-                _logger.LogInformation($"Init Apollo Local Config failed - namespace: {_namespaceName}, reason: {ExceptionUtil.GetDetailMessage(ex)}.");
+                _logger.LogError($"Init Apollo Local Config failed - namespace: {_namespaceName}, reason: {ExceptionUtil.GetDetailMessage(ex)}.");
             }
             finally
             {
@@ -51,7 +52,7 @@ namespace Apollo.NetCore.Internals
             {
                 return _configProperties.ReadFullFence().GetProperty(key);
             }
-            _logger.LogInformation($"Could not load config for namespace {_namespaceName} from Apollo, please check whether the configs are released in Apollo! Return default value now!");
+            _logger.LogError($"Could not load config for namespace {_namespaceName} from Apollo, please check whether the configs are released in Apollo! Return default value now!");
             return defaultValue;
         }
 
@@ -176,8 +177,8 @@ namespace Apollo.NetCore.Internals
             {
                 foreach (ConfigChangeEvent handler in ConfigChanged.GetInvocationList())
                 {
-                    ///TODO:待优化
-                    handler.Invoke(this,changeEvent);
+                    //加入线程池执行
+                    ThreadPool.QueueUserWorkItem(state => handler.Invoke(this, changeEvent));
                 }
             }
         }

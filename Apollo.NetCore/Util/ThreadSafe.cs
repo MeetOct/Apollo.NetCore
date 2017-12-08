@@ -25,5 +25,10 @@ namespace Apollo.NetCore.Util
             Interlocked.MemoryBarrier();
             return value;
         }
+
+        public T AtomicExchange(T newValue)
+        {
+            return Interlocked.Exchange(ref _value, newValue);
+        }
     }
 }

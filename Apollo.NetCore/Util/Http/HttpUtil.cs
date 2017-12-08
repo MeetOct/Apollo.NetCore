@@ -22,20 +22,7 @@ namespace Apollo.NetCore.Util.Http
                     Method = HttpMethod.Get,
                 };
                 //request.Headers.Authorization = new AuthenticationHeaderValue(basicAuth);
-                //int timeout = httpRequest.Timeout;
-                //if (timeout <= 0 && timeout != Timeout.Infinite)
-                //{
-                //    timeout = m_configUtil.Timeout;
-                //}
-                //int readTimeout = httpRequest.ReadTimeout;
-                //if (readTimeout <= 0 && readTimeout != Timeout.Infinite)
-                //{
-                //    readTimeout = m_configUtil.ReadTimeout;
-                //}
-                //if (timeout > 0)
-                //{
-                //    _httpClient.Timeout = TimeSpan.FromMinutes(timeout);
-                //}
+                _httpClient.Timeout = TimeSpan.FromSeconds(httpRequest.Timeout ?? 60);
                 var resp = await _httpClient.SendAsync(request);
                 if (resp.StatusCode == HttpStatusCode.OK|| resp.StatusCode == HttpStatusCode.NotModified)
                 {

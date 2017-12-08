@@ -68,6 +68,7 @@ namespace Apollo.NetCoreDemo
 
             applicationLifetime.ApplicationStarted.Register(()=> 
             {
+                //注册通知事件
                 var config = app.ApplicationServices.GetService<DefaultConfig>();
                 var service = app.ApplicationServices.GetService<ConfigService>();
                 config.ConfigChanged += service.OnChanged;
@@ -79,8 +80,12 @@ namespace Apollo.NetCoreDemo
         {
             // Simple mockup of a simple per request controller.
             services.AddScoped<Controller>();
-            services.AddSingleton<RemoteConfigRepository>();
-            services.AddSingleton<DefaultConfig>();
+
+            services.AddSingleton(f => (ConfigServiceLocator)Activator.CreateInstance(typeof(ConfigServiceLocator), f.GetService<IOptions<ApolloSettings>>()));
+
+            services.AddSingleton(f => (RemoteConfigRepository)Activator.CreateInstance(typeof(RemoteConfigRepository), f.GetService<IOptions<ApolloSettings>>(), f.GetService<ILoggerFactory>(), f.GetService<ConfigServiceLocator>(), "application"));
+
+            services.AddSingleton(f => (DefaultConfig)Activator.CreateInstance(typeof(DefaultConfig), f.GetService<RemoteConfigRepository>(), f.GetService<ILoggerFactory>(), "application"));
             services.AddSingleton<ConfigService>();
             // Binds config.json to the options and setups the change tracking.
             services.Configure<ApolloSettings>(Configuration.GetSection("Apollo"));

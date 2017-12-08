@@ -13,10 +13,15 @@ using System.Threading.Tasks;
 
 namespace Apollo.NetCore.Internals
 {
+    /// <summary>
+    /// 远程配置仓储
+    /// </summary>
     public class RemoteConfigRepository
     {
         private ConcurrentBag<IRepositoryChangeListener> _listeners = new ConcurrentBag<IRepositoryChangeListener>();
         private ThreadSafe<ApolloConfig> _config;
+        private ThreadSafe<RemoteServiceConfig> _remoteServiceConfig;
+        private ConfigServiceLocator _serviceLocator;
         private string _localIp;
         private string LocalIp
         {
@@ -53,15 +58,16 @@ namespace Apollo.NetCore.Internals
         private string _namespaceName;
         private ILogger _logger;
 
-        public RemoteConfigRepository(IOptions<ApolloSettings> apolloSettings,ILoggerFactory loggerFactory, string namespaceName = "application")
+        public RemoteConfigRepository(IOptions<ApolloSettings> apolloSettings,ILoggerFactory loggerFactory, ConfigServiceLocator configServiceLocator, string namespaceName = "application")
         {
             _logger = loggerFactory.CreateLogger<RemoteConfigRepository>();
             _config = new ThreadSafe<ApolloConfig>(null);
+            _remoteServiceConfig = new ThreadSafe<RemoteServiceConfig>(null);
+            _serviceLocator = configServiceLocator;
             _namespaceName = namespaceName;
             _apolloSettings = apolloSettings.Value;
             InitScheduleRefresh();
         }
-
 
         protected void Sync()
         {
@@ -108,31 +114,43 @@ namespace Apollo.NetCore.Internals
         {
             int maxRetries = 2;
             Exception exception = null;
-            var url = AssembleQueryConfigUrl(_apolloSettings);
+            var url = string.Empty;
             for (int i = 0; i < maxRetries; i++)
             {
-                try
+                var randomConfigServices = new List<RemoteServiceConfig>(ConfigServices);
+                //Access the server which notifies the client first?why
+                //if (_remoteServiceConfig.ReadFullFence() != null)
+                //{
+                //    randomConfigServices.Insert(0, _remoteServiceConfig.AtomicExchange(null));
+                //}
+
+                foreach (var item in randomConfigServices)
                 {
+                    //TODO:缺省m_remoteMessages
+                    url = AssembleQueryConfigUrl(item.HomepageUrl,_apolloSettings);
                     _logger.LogInformation($"loading config from  {url}");
-                    var response = await HttpUtil.Get<ApolloConfig>(new HttpRequest(url));
-                    _logger.LogInformation($"config  server responds with {response.StatusCode} HTTP status code.");
-                    if (response.StatusCode == HttpStatusCode.NotModified)
+                    try
                     {
-                        return _config.ReadFullFence();
+                        var response = await HttpUtil.Get<ApolloConfig>(new HttpRequest(url));
+                        _logger.LogInformation($"config  server responds with {response.StatusCode} HTTP status code.");
+                        if (response.StatusCode == HttpStatusCode.NotModified)
+                        {
+                            return _config.ReadFullFence();
+                        }
+                        _logger.LogInformation($"Loaded config from {_namespaceName}: {response.Body}");
+                        return response.Body;
                     }
-                    _logger.LogInformation($"Loaded config from {_namespaceName}: {response.Body}");
-                    return response.Body;
-                }
-                catch (RemoteStatusCodeException ex)
-                {
-                    if (ex.StatusCode == HttpStatusCode.NotFound)
+                    catch (RemoteStatusCodeException ex)
                     {
-                        _logger.LogError($"Could not find config for namespace - appId: {_apolloSettings.AppID}, cluster: {_apolloSettings.Cluster}, namespace: {_namespaceName}, please check whether the configs are released in Apollo! \r\n exception:{ExceptionUtil.GetDetailMessage(ex)}");
+                        if (ex.StatusCode == HttpStatusCode.NotFound)
+                        {
+                            _logger.LogError($"Could not find config for namespace - appId: {_apolloSettings.AppID}, cluster: {_apolloSettings.Cluster}, namespace: {_namespaceName}, please check whether the configs are released in Apollo! \r\n exception:{ExceptionUtil.GetDetailMessage(ex)}");
+                        }
                     }
-                }
-                catch (Exception ex)
-                {
-                    exception = ex;
+                    catch (Exception ex)
+                    {
+                        exception = ex;
+                    }
                 }
                 Thread.Sleep(1000); //sleep 1 second
             }
@@ -154,9 +172,10 @@ namespace Apollo.NetCore.Internals
             }
         }
 
-        private string AssembleQueryConfigUrl(ApolloSettings setting)
+        private string AssembleQueryConfigUrl(string url,ApolloSettings setting)
         {
             ///该接口会直接从数据库中获取配置，可以配合配置推送通知实现实时更新配置。
+            //var uri = $"{url.TrimEnd('/')}/configs/{setting.AppID}/{setting.Cluster}/{_namespaceName}"; url内网地址
             var uri = $"{setting.Url.TrimEnd('/')}/configs/{setting.AppID}/{setting.Cluster}/{_namespaceName}";
             var query = string.Empty; 
             if (!string.IsNullOrEmpty(LocalIp))
@@ -199,6 +218,19 @@ namespace Apollo.NetCore.Internals
                     _logger.LogError($"load config from namespace: {_namespaceName} error !\r\n exception: {ExceptionUtil.GetDetailMessage(ex)}");
                     // ignore
                 }
+            }
+        }
+
+        private IList<RemoteServiceConfig> ConfigServices
+        {
+            get
+            {
+                var services = _serviceLocator.GetConfigServices();
+                if (services.Count == 0)
+                {
+                    throw new RemoteException("No available config service");
+                }
+                return services;
             }
         }
     }
