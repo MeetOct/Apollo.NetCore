@@ -5,7 +5,12 @@ VisualStudioVersion = 15.0.26730.15
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Apollo.NetCore", "Apollo.NetCore\Apollo.NetCore.csproj", "{35252C56-7B17-4A25-9AFE-B2CEE2460218}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Apollo.NetCoreDemo", "Apollo.NetCoreDemo\Apollo.NetCoreDemo.csproj", "{A6711346-EC70-45AB-9C41-E042EDD6EEF7}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Apollo.NetCoreDemo", "Apollo.NetCoreDemo\Apollo.NetCoreDemo.csproj", "{A6711346-EC70-45AB-9C41-E042EDD6EEF7}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "nuget", "nuget", "{54B776CE-5B67-4057-82A8-71A3F073CF84}"
+	ProjectSection(SolutionItems) = preProject
+		nuget.bat = nuget.bat
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
