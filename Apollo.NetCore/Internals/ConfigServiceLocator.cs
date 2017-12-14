@@ -16,36 +16,6 @@ namespace Apollo.NetCore.Internals
     /// </summary>
     public class ConfigServiceLocator
     {
-        private string _localIp;
-        private string LocalIp
-        {
-            get
-            {
-                if (!string.IsNullOrWhiteSpace(_localIp))
-                {
-                    return _localIp;
-                }
-                lock (this)
-                {
-                    if (!string.IsNullOrWhiteSpace(_localIp))
-                    {
-                        return _localIp;
-                    }
-                    var _hostName = Dns.GetHostName();
-                    var adresses = Dns.GetHostAddressesAsync(_hostName).GetAwaiter().GetResult();
-                    foreach (var ip in adresses)
-                    {
-                        if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
-                        {
-                            _localIp = ip.ToString();
-                            return _localIp;
-                        }
-                    }
-                    _localIp = adresses[0].ToString();
-                    return _localIp;
-                }
-            }
-        }
         private ILogger _logger;
         private ApolloSettings _apolloSettings;
         private ThreadSafe<IList<RemoteServiceConfig>> _configServices;
@@ -96,7 +66,7 @@ namespace Apollo.NetCore.Internals
                 {
                     try
                     {
-                        Thread.Sleep(_apolloSettings.RefreshInterval);
+                        Thread.Sleep(_apolloSettings.ServiceRefreshInterval);
                         _logger.LogInformation("refresh config services");
                         TryUpdateConfigServices();
                     }
@@ -156,9 +126,9 @@ namespace Apollo.NetCore.Internals
             {
                 query = $"{query}&appId={appId}";
             }
-            if (!string.IsNullOrEmpty(LocalIp))
+            if (!string.IsNullOrEmpty(NetworkUtil.LocalIp))
             {
-                query = $"{query}&ip={LocalIp}";
+                query = $"{query}&ip={NetworkUtil.LocalIp}";
             }
             return $"{uri}?{query}";
         }

@@ -22,36 +22,6 @@ namespace Apollo.NetCore.Internals
         private ThreadSafe<ApolloConfig> _config;
         private ThreadSafe<RemoteServiceConfig> _remoteServiceConfig;
         private ConfigServiceLocator _serviceLocator;
-        private string _localIp;
-        private string LocalIp
-        {
-            get
-            {
-                if (!string.IsNullOrWhiteSpace(_localIp))
-                {
-                    return _localIp;
-                }
-                lock (this)
-                {
-                    if (!string.IsNullOrWhiteSpace(_localIp))
-                    {
-                        return _localIp;
-                    }
-                    var _hostName = Dns.GetHostName();
-                    var adresses = Dns.GetHostAddressesAsync(_hostName).GetAwaiter().GetResult();
-                    foreach (var ip in adresses)
-                    {
-                        if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
-                        {
-                            _localIp = ip.ToString();
-                            return _localIp;
-                        }
-                    }
-                    _localIp= adresses[0].ToString();
-                    return _localIp;
-                }
-            }
-        }
         private ApolloSettings _apolloSettings;
         private CancellationTokenSource _cancellationTokenSource;
         private ManualResetEventSlim _eventSlim;
@@ -178,9 +148,9 @@ namespace Apollo.NetCore.Internals
             //var uri = $"{url.TrimEnd('/')}/configs/{setting.AppID}/{setting.Cluster}/{_namespaceName}"; url内网地址
             var uri = $"{setting.Url.TrimEnd('/')}/configs/{setting.AppID}/{setting.Cluster}/{_namespaceName}";
             var query = string.Empty; 
-            if (!string.IsNullOrEmpty(LocalIp))
+            if (!string.IsNullOrEmpty(NetworkUtil.LocalIp))
             {
-                query = $"{query}&ip={LocalIp}";
+                query = $"{query}&ip={NetworkUtil.LocalIp}";
             }
             var rKey = _config.ReadFullFence()?.ReleaseKey;
             if (!string.IsNullOrWhiteSpace(rKey))

@@ -11,5 +11,7 @@
         public int Timeout { get; set; }
 
         public int RefreshInterval { get; set; }
+
+        public int ServiceRefreshInterval { get; set; }
     }
 }

@@ -33,6 +33,5 @@ namespace Apollo.NetCore.Models
                 ", namespaceName='" + NamespaceName + '\'' + $"configurations={string.Join(";", Configurations.Select(c => $"{c.Key}:{c.Value}"))};releaseKey={ReleaseKey}" +
                 ", releaseKey='" + ReleaseKey + '\'' + '}';
         }
-
     }
 }

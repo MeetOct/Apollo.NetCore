@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 
-namespace Apollo.NetCore.Util
+namespace Apollo.NetCore.Internals
 {
     public class ThreadSafe<T> where T : class
     {
