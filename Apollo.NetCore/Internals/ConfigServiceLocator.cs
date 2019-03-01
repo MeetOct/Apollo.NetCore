@@ -19,9 +19,10 @@ namespace Apollo.NetCore.Internals
         private ILogger _logger;
         private ApolloSettings _apolloSettings;
         private ThreadSafe<IList<RemoteServiceConfig>> _configServices;
-        public ConfigServiceLocator(IOptions<ApolloSettings> apolloSettings)
+        public ConfigServiceLocator(IOptions<ApolloSettings> apolloSettings, ILoggerFactory loggerFactory)
         {
             _configServices = new ThreadSafe<IList<RemoteServiceConfig>>(new List<RemoteServiceConfig>());
+            _logger = loggerFactory.CreateLogger(typeof(ConfigServiceLocator));
             _apolloSettings = apolloSettings.Value;
         }
 

@@ -45,6 +45,7 @@ namespace Apollo.NetCore.Internals
             {
                 try
                 {
+
                     var previous = _config.ReadFullFence();
                     var current = LoadApolloConfig().GetAwaiter().GetResult();
                     if (!object.ReferenceEquals(_config.ReadFullFence(), current))
@@ -145,8 +146,8 @@ namespace Apollo.NetCore.Internals
         private string AssembleQueryConfigUrl(string url,ApolloSettings setting)
         {
             ///该接口会直接从数据库中获取配置，可以配合配置推送通知实现实时更新配置。
-            //var uri = $"{url.TrimEnd('/')}/configs/{setting.AppID}/{setting.Cluster}/{_namespaceName}"; url内网地址
-            var uri = $"{setting.Url.TrimEnd('/')}/configs/{setting.AppID}/{setting.Cluster}/{_namespaceName}";
+            //var uri = $"{url.TrimEnd('/')}/configs/{setting.AppID}/{setting.Cluster}/{_namespaceName}"; //url内网地址
+            var uri = $"{url.TrimEnd('/')}/configs/{setting.AppID}/{setting.Cluster}/{_namespaceName}";
             var query = string.Empty; 
             if (!string.IsNullOrEmpty(NetworkUtil.LocalIp))
             {
@@ -157,7 +158,7 @@ namespace Apollo.NetCore.Internals
             {
                 query = $"{query}&releaseKey={rKey}";
             }
-            return $"{uri}?{query}";
+            return $"{uri}?{query.TrimStart('&')}";
         }
 
         /// <summary>
